@@ -447,26 +447,59 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
 @Composable
 fun UriThumbnail(uri: Uri, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val bitmap = remember(uri) {
-        runCatching {
-            context.contentResolver.openInputStream(uri)?.use { stream ->
-                BitmapFactory.decodeStream(stream)
-            }
-        }.getOrNull()
+    var bitmap by remember(uri) { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    LaunchedEffect(uri) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val options = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+                context.contentResolver.openInputStream(uri)?.use { stream ->
+                    BitmapFactory.decodeStream(stream, null, options)
+                }
+
+                val targetSize = 300
+                val height = options.outHeight
+                val width = options.outWidth
+                var inSampleSize = 1
+                if (height > targetSize || width > targetSize) {
+                    val halfHeight = height / 2
+                    val halfWidth = width / 2
+                    while (halfHeight / inSampleSize >= targetSize && halfWidth / inSampleSize >= targetSize) {
+                        inSampleSize *= 2
+                    }
+                }
+
+                val decodeOptions = BitmapFactory.Options().apply {
+                    inSampleSize = inSampleSize
+                }
+                context.contentResolver.openInputStream(uri)?.use { stream ->
+                    BitmapFactory.decodeStream(stream, null, decodeOptions)
+                }
+            }.getOrNull()
+        }.let { decoded ->
+            bitmap = decoded
+        }
     }
+
     if (bitmap != null) {
         Image(
-            bitmap = bitmap.asImageBitmap(),
+            bitmap = bitmap!!.asImageBitmap(),
             contentDescription = null,
             modifier = modifier,
             contentScale = ContentScale.Crop
         )
     } else {
         Box(
-            modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+            modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Description, contentDescription = null)
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
