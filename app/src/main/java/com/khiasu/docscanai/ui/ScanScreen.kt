@@ -190,26 +190,32 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
             }
 
             // Main Scan Card with Gradient Border / Background
+            val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+            val primary = MaterialTheme.colorScheme.primary
+            val cardBgBrush = remember(primaryContainer) {
+                Brush.verticalGradient(
+                    colors = listOf(
+                        primaryContainer.copy(alpha = 0.4f),
+                        primaryContainer.copy(alpha = 0.05f)
+                    )
+                )
+            }
+            val cardBorderBrush = remember(primary) {
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        primary.copy(alpha = 0.5f),
+                        Color.Transparent
+                    )
+                )
+            }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(24.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.05f)
-                            )
-                        )
-                    )
+                    .background(cardBgBrush)
                     .border(
                         width = 1.dp,
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                Color.Transparent
-                            )
-                        ),
+                        brush = cardBorderBrush,
                         shape = RoundedCornerShape(24.dp)
                     )
                     .padding(24.dp)
@@ -329,7 +335,7 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(capturedUris.toList()) { uri ->
+                    items(capturedUris.toList(), key = { it.toString() }) { uri ->
                         Box(
                             modifier = Modifier
                                 .width(120.dp)

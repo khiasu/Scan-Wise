@@ -106,24 +106,25 @@ fun DocumentsScreen(onOpenDocument: (Long) -> Unit) {
                 contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(documents) { doc ->
+                items(documents, key = { it.id }) { doc ->
                     val dateStr = remember(doc.createdAt) {
                         SimpleDateFormat("MMM d, yyyy - HH:mm", Locale.getDefault()).format(Date(doc.createdAt))
                     }
 
-                    val sourceIcon = when (doc.sourceType) {
-                        "PDF" -> Icons.Default.PictureAsPdf
-                        "GALLERY" -> Icons.Default.PhotoLibrary
-                        else -> Icons.Default.CameraAlt
+                    val sourceIcon = remember(doc.sourceType) {
+                        when (doc.sourceType) {
+                            "PDF" -> Icons.Default.PictureAsPdf
+                            "GALLERY" -> Icons.Default.PhotoLibrary
+                            else -> Icons.Default.CameraAlt
+                        }
                     }
 
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .shadow(
-                                elevation = 2.dp,
-                                shape = RoundedCornerShape(16.dp),
-                                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                elevation = 1.dp,
+                                shape = RoundedCornerShape(16.dp)
                             )
                             .clip(RoundedCornerShape(16.dp))
                             .clickable { onOpenDocument(doc.id) },
