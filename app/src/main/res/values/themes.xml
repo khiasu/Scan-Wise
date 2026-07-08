@@ -1,3 +1,3 @@
 <resources>
-    <style name="Theme.DocScanAI" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.ScanWise" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

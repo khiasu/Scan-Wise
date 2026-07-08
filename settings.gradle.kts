@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DocScanAI"
+rootProject.name = "ScanWise"
 include(":app")

@@ -8,17 +8,17 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
-        android:name=".DocScanApp"
+        android:name=".ScanWiseApp"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.DocScanAI"
+        android:theme="@style/Theme.ScanWise"
         android:supportsRtl="true">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.DocScanAI"
+            android:theme="@style/Theme.ScanWise"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait">
