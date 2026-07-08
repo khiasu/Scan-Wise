@@ -35,6 +35,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.khiasu.docscanai.prefs.SecurePrefs
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.rotate
@@ -140,6 +142,53 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
+            var hasApiKey by remember { mutableStateOf(SecurePrefs.hasApiKey(context)) }
+            LaunchedEffect(Unit) {
+                hasApiKey = SecurePrefs.hasApiKey(context)
+            }
+
+            if (!hasApiKey) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f)
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f)),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Extraction Key Required",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Configure your API key in Settings before digitizing documents.",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
             // Main Scan Card with Gradient Border / Background
             Box(
                 modifier = Modifier
@@ -242,7 +291,17 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
                     Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedButton(
-                        onClick = { pdfLauncher.launch(arrayOf("application/pdf")) },
+                        onClick = {
+                            if (!SecurePrefs.hasApiKey(context)) {
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Please configure your API key in Settings first.",
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                pdfLauncher.launch(arrayOf("application/pdf"))
+                            }
+                        },
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -331,6 +390,14 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
 
                 Button(
                     onClick = {
+                        if (!SecurePrefs.hasApiKey(context)) {
+                            android.widget.Toast.makeText(
+                                context,
+                                "Please configure your API key in Settings first.",
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                            return@Button
+                        }
                         scope.launch {
                             val docId = repo.createDocumentFromImages(
                                 title = "Scan ${System.currentTimeMillis() / 1000}",

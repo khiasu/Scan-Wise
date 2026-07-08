@@ -1,5 +1,9 @@
 package com.khiasu.docscanai.ui
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -53,7 +57,27 @@ fun AppRoot() {
         NavHost(
             navController = navController,
             startDestination = Dest.Scan.route,
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(padding),
+            enterTransition = {
+                val initialRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val direction = if (getTabOrder(initialRoute) < getTabOrder(targetRoute)) {
+                    AnimatedContentTransitionScope.SlideDirection.Left
+                } else {
+                    AnimatedContentTransitionScope.SlideDirection.Right
+                }
+                slideIntoContainer(direction, animationSpec = tween(350)) + fadeIn(animationSpec = tween(250))
+            },
+            exitTransition = {
+                val initialRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val direction = if (getTabOrder(initialRoute) < getTabOrder(targetRoute)) {
+                    AnimatedContentTransitionScope.SlideDirection.Left
+                } else {
+                    AnimatedContentTransitionScope.SlideDirection.Right
+                }
+                slideOutOfContainer(direction, animationSpec = tween(350)) + fadeOut(animationSpec = tween(250))
+            }
         ) {
             composable(Dest.Scan.route) {
                 ScanScreen(onDocumentCreated = { docId ->
@@ -69,5 +93,14 @@ fun AppRoot() {
                 DocumentDetailScreen(docId)
             }
         }
+    }
+}
+
+private fun getTabOrder(route: String?): Int {
+    return when (route) {
+        "scan" -> 0
+        "documents" -> 1
+        "settings" -> 2
+        else -> 3
     }
 }
