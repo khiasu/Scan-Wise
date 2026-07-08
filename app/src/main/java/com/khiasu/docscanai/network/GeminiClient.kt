@@ -1,0 +1,69 @@
+package com.khiasu.docscanai.network
+
+import android.graphics.Bitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
+
+/**
+ * Google Gemini (generateContent) vision client.
+ * Free-tier friendly: gemini-1.5-flash / gemini-2.0-flash have generous free quotas.
+ */
+class GeminiClient(
+    private val model: String = "gemini-2.0-flash"
+) : AiClient {
+
+    private val http = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .build()
+
+    override suspend fun extract(apiKey: String, bitmap: Bitmap): Result<ExtractionResult> =
+        withContext(Dispatchers.IO) {
+            try {
+                val base64Image = bitmapToBase64Jpeg(bitmap)
+
+                val body = JSONObject().apply {
+                    put("contents", JSONArray().put(JSONObject().apply {
+                        put("parts", JSONArray().apply {
+                            put(JSONObject().put("text", EXTRACTION_PROMPT))
+                            put(JSONObject().put("inline_data", JSONObject().apply {
+                                put("mime_type", "image/jpeg")
+                                put("data", base64Image)
+                            }))
+                        })
+                    }))
+                    put("generationConfig", JSONObject().put("response_mime_type", "application/json"))
+                }
+
+                val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
+                val request = Request.Builder()
+                    .url(url)
+                    .post(body.toString().toRequestBody("application/json".toMediaType()))
+                    .build()
+
+                http.newCall(request).execute().use { resp ->
+                    val respBody = resp.body?.string().orEmpty()
+                    if (!resp.isSuccessful) {
+                        return@withContext Result.failure(Exception("Gemini error ${resp.code}: $respBody"))
+                    }
+                    val json = JSONObject(respBody)
+                    val text = json.getJSONArray("candidates")
+                        .getJSONObject(0)
+                        .getJSONObject("content")
+                        .getJSONArray("parts")
+                        .getJSONObject(0)
+                        .getString("text")
+                    Result.success(parseExtractionJson(text))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+}
