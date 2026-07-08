@@ -101,61 +101,68 @@ fun SettingsScreen() {
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        val providerDisplayName = remember(provider) {
-            when (provider) {
-                SecurePrefs.Provider.OFFLINE -> "On-Device OCR (Free, Offline)"
-                SecurePrefs.Provider.GROQ -> "Groq Cloud (Free Tier Llama)"
-                SecurePrefs.Provider.GEMINI -> "Google Gemini"
-                SecurePrefs.Provider.OPENAI -> "OpenAI GPT"
-                SecurePrefs.Provider.CLAUDE -> "Anthropic Claude"
-            }
-        }
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SecurePrefs.Provider.entries.forEach { p ->
+                val (title, subtitle, icon) = when (p) {
+                    SecurePrefs.Provider.OFFLINE -> Triple("On-Device OCR (Offline)", "100% Free, offline local text reader", Icons.Default.WifiOff)
+                    SecurePrefs.Provider.GROQ -> Triple("Groq Cloud (Free Llama)", "High-speed free Llama 3.2 Vision", Icons.Default.Cloud)
+                    SecurePrefs.Provider.GEMINI -> Triple("Google Gemini", "Generous free tier with Gemini Flash", Icons.Default.Star)
+                    SecurePrefs.Provider.OPENAI -> Triple("OpenAI GPT", "GPT-4 Vision completions engine", Icons.Default.Lock)
+                    SecurePrefs.Provider.CLAUDE -> Triple("Anthropic Claude", "Claude 3.5 Sonnet visual logic", Icons.Default.Build)
+                }
 
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it }
-        ) {
-            OutlinedTextField(
-                value = providerDisplayName,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Selected Provider") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth()
-            )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                SecurePrefs.Provider.entries.forEach { p ->
-                    val displayName = when (p) {
-                        SecurePrefs.Provider.OFFLINE -> "On-Device OCR (Free, Offline)"
-                        SecurePrefs.Provider.GROQ -> "Groq Cloud (Free Tier Llama)"
-                        SecurePrefs.Provider.GEMINI -> "Google Gemini"
-                        SecurePrefs.Provider.OPENAI -> "OpenAI GPT"
-                        SecurePrefs.Provider.CLAUDE -> "Anthropic Claude"
-                    }
-                    DropdownMenuItem(
-                        text = { Text(displayName) },
-                        onClick = {
-                            provider = p
-                            expanded = false
-                        }
+                val isSelected = provider == p
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { provider = p },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected) 
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f) 
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    ),
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = if (isSelected) 
+                            MaterialTheme.colorScheme.primary 
+                        else MaterialTheme.colorScheme.outlineVariant
                     )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = { provider = p },
+                            colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(title, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                 }
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
         if (provider == SecurePrefs.Provider.OFFLINE) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
                 ),
                 border = BorderStroke(
                     width = 1.dp,
@@ -304,13 +311,58 @@ fun SettingsScreen() {
         }
 
         Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(24.dp))
+
+        // Confirmation Dialog for Clearing Credentials
+        var showClearConfirm by remember { mutableStateOf(false) }
+        if (showClearConfirm) {
+            AlertDialog(
+                onDismissRequest = { showClearConfirm = false },
+                title = {
+                    Text(
+                        text = "Clear Credentials?",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Are you sure you want to delete your configured API keys and reset the default engine? This action cannot be undone.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            SecurePrefs.clear(context)
+                            apiKey = ""
+                            savedMessage = "Stored credentials cleared."
+                            showClearConfirm = false
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Clear Keys", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showClearConfirm = false }) {
+                        Text("Cancel")
+                    }
+                },
+                shape = RoundedCornerShape(20.dp),
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        }
 
         if (showPolicyDialog) {
             Dialog(onDismissRequest = { showPolicyDialog = false }) {
                 Surface(
                     shape = RoundedCornerShape(24.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -319,30 +371,62 @@ fun SettingsScreen() {
                     ) {
                         Text(
                             text = "Terms & Privacy Policy",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        Text(
-                            text = "Privacy Commitment",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "• All scans, rasterized PDF pages, and extracted text are kept inside this app's private sandbox. No data leaves the device except to the extraction endpoints you explicitly select.\n\n• Your API keys are encrypted locally using AES-256 and backed by Android Keystore hardware protection. They are never sent to any intermediary server of ours.",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Privacy Commitment",
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "• All scans, PDF pages, and extracted text are kept entirely inside this app's private sandbox. No data leaves the device except directly to the providers you explicitly select.\n\n• Your API keys are encrypted locally using AES-256 and backed by hardware-protected Android Keystore. They are never sent to any intermediary server of ours.",
+                                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                         
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Terms of Use",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "• You are solely responsible for the usage and security of the API keys you provide.\n\n• All transaction costs or quotas applied by the selected extraction provider (Google, Anthropic, or OpenAI) are your responsibility.\n\n• ScanWise provides the scanning and translation interface 'as is' without warranties of any kind.",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Terms of Use",
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "• You are solely responsible for the usage, security, and credentials of the API keys you provide.\n\n• All transaction costs or quotas applied by the selected extraction provider (Google, Anthropic, or OpenAI) are your responsibility.\n\n• ScanWise provides the scanning and translation interface 'as is' without warranties of any kind.",
+                                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                         
                         Spacer(modifier = Modifier.height(24.dp))
                         Button(
@@ -350,7 +434,7 @@ fun SettingsScreen() {
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.align(Alignment.End)
                         ) {
-                            Text("Done")
+                            Text("Done", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -358,15 +442,12 @@ fun SettingsScreen() {
         }
 
         OutlinedButton(
-            onClick = {
-                SecurePrefs.clear(context)
-                apiKey = ""
-                savedMessage = "Stored credentials cleared."
-            },
+            onClick = { showClearConfirm = true },
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color(0xFFEF4444)
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
             ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)

@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.unit.dp
@@ -38,7 +39,8 @@ fun DocumentDetailScreen(docId: Long) {
     val pages by repo.observePages(docId).collectAsState(initial = emptyList())
     var doc by remember { mutableStateOf<com.khiasu.docscanai.data.DocumentEntity?>(null) }
     var showExportDialog by remember { mutableStateOf(false) }
-    var lastExportMessage by remember { mutableStateOf<String?>(null) }
+    var exportedUris by remember { mutableStateOf<List<android.net.Uri>?>(null) }
+    var exportedFormat by remember { mutableStateOf<com.khiasu.docscanai.export.ExportFormat?>(null) }
 
     LaunchedEffect(docId) { 
         doc = repo.getDocument(docId) 
@@ -49,31 +51,31 @@ fun DocumentDetailScreen(docId: Long) {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Premium Header with Back-like branding
-        Row(
+        // Centered Header with Safe Top Padding to prevent notch/status-bar overlap
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .statusBarsPadding()
+                .padding(top = 28.dp, bottom = 12.dp, start = 24.dp, end = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = doc?.title ?: "Document",
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(Modifier.height(4.dp))
-                val doneCount = pages.count { it.status == "DONE" }
-                Text(
-                    text = "$doneCount of ${pages.size} pages digitized",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-            }
+            Text(
+                text = doc?.title ?: "Document",
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(4.dp))
+            val doneCount = pages.count { it.status == "DONE" }
+            Text(
+                text = "$doneCount of ${pages.size} pages digitized",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                textAlign = TextAlign.Center
+            )
         }
 
         // Page list
@@ -227,16 +229,6 @@ fun DocumentDetailScreen(docId: Long) {
                 Spacer(Modifier.width(8.dp))
                 Text("Export Document", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
-
-            lastExportMessage?.let {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium
-                )
-            }
         }
     }
 
@@ -248,10 +240,91 @@ fun DocumentDetailScreen(docId: Long) {
                     val document = doc ?: return@launch
                     val allPages = repo.getPages(docId)
                     val uris = ExportManager.export(context, document, allPages, exportScope, format)
-                    lastExportMessage = "Saved ${uris.size} file(s) to Downloads."
+                    exportedUris = uris
+                    exportedFormat = format
                     showExportDialog = false
                 }
             }
+        )
+    }
+
+    val uris = exportedUris
+    val format = exportedFormat
+    if (uris != null && format != null) {
+        AlertDialog(
+            onDismissRequest = { 
+                exportedUris = null
+                exportedFormat = null
+            },
+            title = {
+                Text(
+                    text = "Export Successful",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            },
+            text = {
+                Text(
+                    text = "Successfully saved your document files to the Downloads folder.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val firstUri = uris.firstOrNull()
+                        if (firstUri != null) {
+                            try {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                    setDataAndType(firstUri, format.mimeType)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(context, "No app found to open this format.", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Open File", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            val firstUri = uris.firstOrNull()
+                            if (firstUri != null) {
+                                try {
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = format.mimeType
+                                        putExtra(android.content.Intent.EXTRA_STREAM, firstUri)
+                                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(android.content.Intent.createChooser(intent, "Share Document"))
+                                } catch (e: Exception) {
+                                    android.widget.Toast.makeText(context, "Sharing failed.", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Share", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            exportedUris = null
+                            exportedFormat = null
+                        }
+                    ) {
+                        Text("Dismiss")
+                    }
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 }
@@ -267,82 +340,174 @@ private fun ExportDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surface,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(vertical = 16.dp)
         ) {
-            Column(Modifier.padding(24.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth()
+            ) {
                 Text(
                     text = "Export Document",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(16.dp))
 
+                // Scope selection
                 Text(
-                    text = "Combine Pages",
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    text = "Structure",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = scope == ExportScope.MERGED,
-                        onClick = { scope = ExportScope.MERGED },
-                        label = { Text("Single Merged File") },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    FilterChip(
-                        selected = scope == ExportScope.PER_PAGE,
-                        onClick = { scope = ExportScope.PER_PAGE },
-                        label = { Text("Individual Files") },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
 
-                Spacer(Modifier.height(20.dp))
-                Text(
-                    text = "Format",
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ExportFormat.entries.forEach { f ->
-                        FilterChip(
-                            selected = format == f,
-                            onClick = { format = f },
-                            label = { Text(f.name) },
-                            shape = RoundedCornerShape(12.dp)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Merged Card
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { scope = ExportScope.MERGED },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (scope == ExportScope.MERGED) 
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) 
+                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = if (scope == ExportScope.MERGED) 
+                                MaterialTheme.colorScheme.primary 
+                            else MaterialTheme.colorScheme.outlineVariant
                         )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = scope == ExportScope.MERGED,
+                                onClick = { scope = ExportScope.MERGED },
+                                colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Column {
+                                Text("Single Document", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                                Text("Merge all pages into one single file", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+
+                    // Per page Card
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { scope = ExportScope.PER_PAGE },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (scope == ExportScope.PER_PAGE) 
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) 
+                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = if (scope == ExportScope.PER_PAGE) 
+                                MaterialTheme.colorScheme.primary 
+                            else MaterialTheme.colorScheme.outlineVariant
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = scope == ExportScope.PER_PAGE,
+                                onClick = { scope = ExportScope.PER_PAGE },
+                                colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Column {
+                                Text("Individual Pages", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                                Text("Save each page as its own separate file", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
                 }
 
-                Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(20.dp))
+
+                // Format selection
+                Text(
+                    text = "File Format",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.height(8.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ExportFormat.entries.forEach { f ->
+                        val (title, subtitle) = when (f) {
+                            ExportFormat.PDF -> "PDF Document" to "Best for sharing, viewing and printing"
+                            ExportFormat.DOCX -> "Microsoft Word (DOCX)" to "Best for text editing and layout"
+                            ExportFormat.CSV -> "CSV Spreadsheet" to "Best for tabular key-value data"
+                            ExportFormat.JSON -> "Structured JSON" to "Best for developer data imports"
+                        }
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { format = f },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (format == f) 
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) 
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = if (format == f) 
+                                    MaterialTheme.colorScheme.primary 
+                            else MaterialTheme.colorScheme.outlineVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = format == f,
+                                    onClick = { format = f },
+                                    colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Column {
+                                    Text(title, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
                 Row(
                     horizontalArrangement = Arrangement.End,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    TextButton(onClick = onDismiss) { 
-                        Text("Cancel") 
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", fontWeight = FontWeight.Bold)
                     }
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = { onExport(scope, format) },
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Export")
+                        Text("Export Now", fontWeight = FontWeight.Bold)
                     }
                 }
             }

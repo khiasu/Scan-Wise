@@ -2,7 +2,7 @@ package com.khiasu.docscanai.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Brand Purple from ScanWise logo
+// Brand Purple Palette from logo (minimal, professional, matched to branding)
 val Purple80 = Color(0xFFD0BCFF)
 val Purple60 = Color(0xFFA78BFA)
 val Purple50 = Color(0xFF8B5CF6)
@@ -12,27 +12,22 @@ val Purple20 = Color(0xFF5B21B6)
 val Purple10 = Color(0xFF3B1F8E)
 val Purple05 = Color(0xFF1E103F)
 
-// Cream palette for light theme
-val Cream100 = Color(0xFFFBF7F0)
-val Cream90 = Color(0xFFF7F0E5)
-val Cream80 = Color(0xFFF0E6D6)
-val Cream70 = Color(0xFFE8DACC)
-
-// Dark palette
-val Dark100 = Color(0xFF08080F)
-val Dark90 = Color(0xFF0F0F1A)
-val Dark80 = Color(0xFF161625)
-val Dark70 = Color(0xFF1E1E30)
-val Dark60 = Color(0xFF28283E)
+// Clean slate layout palette
+val Slate900 = Color(0xFF111827)
+val Slate800 = Color(0xFF1F2937)
+val Slate700 = Color(0xFF374151)
+val Slate600 = Color(0xFF4B5563)
+val Slate100 = Color(0xFFF3F4F6)
+val Slate50  = Color(0xFFF9FAFB)
 
 // Status / semantic
-val StatusDone = Color(0xFF4ADE80)
-val StatusProcessing = Color(0xFF60A5FA)
-val StatusPending = Color(0xFFFBBF24)
-val StatusError = Color(0xFFF87171)
+val StatusDone = Color(0xFF10B981) // Muted Green
+val StatusProcessing = Color(0xFF3B82F6) // Muted Blue
+val StatusPending = Color(0xFFF59E0B) // Amber
+val StatusError = Color(0xFFEF4444) // Muted Red
 
 // On-surface helpers
-val OnDark = Color(0xFFECECF0)
-val OnDarkMuted = Color(0xFF9898A8)
-val OnCream = Color(0xFF1A1A2E)
-val OnCreamMuted = Color(0xFF6B6B7B)
+val OnDark = Color(0xFFF9FAFB)
+val OnDarkMuted = Color(0xFF9CA3AF)
+val OnCream = Color(0xFF111827)
+val OnCreamMuted = Color(0xFF6B7280)

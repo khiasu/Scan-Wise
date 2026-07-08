@@ -189,38 +189,21 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
                 }
             }
 
-            // Main Scan Card with Gradient Border / Background
-            val primaryContainer = MaterialTheme.colorScheme.primaryContainer
-            val primary = MaterialTheme.colorScheme.primary
-            val cardBgBrush = remember(primaryContainer) {
-                Brush.verticalGradient(
-                    colors = listOf(
-                        primaryContainer.copy(alpha = 0.4f),
-                        primaryContainer.copy(alpha = 0.05f)
-                    )
-                )
-            }
-            val cardBorderBrush = remember(primary) {
-                Brush.horizontalGradient(
-                    colors = listOf(
-                        primary.copy(alpha = 0.5f),
-                        Color.Transparent
-                    )
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(cardBgBrush)
-                    .border(
-                        width = 1.dp,
-                        brush = cardBorderBrush,
-                        shape = RoundedCornerShape(24.dp)
-                    )
-                    .padding(24.dp)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                ),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant
+                ),
+                shape = RoundedCornerShape(24.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Icon(
                         imageVector = Icons.Default.DocumentScanner,
                         contentDescription = null,
@@ -298,7 +281,7 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
 
                     OutlinedButton(
                         onClick = {
-                            if (!SecurePrefs.hasApiKey(context)) {
+                            if (!SecurePrefs.isReady(context)) {
                                 android.widget.Toast.makeText(
                                     context,
                                     "Please configure your API key in Settings first.",
@@ -423,9 +406,9 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                    Icon(Icons.Default.CheckCircle, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Analyze & Digitize", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Process & Save Document", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
