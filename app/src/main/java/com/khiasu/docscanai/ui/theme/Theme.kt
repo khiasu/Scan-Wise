@@ -9,6 +9,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple50,
@@ -66,25 +68,59 @@ private val LightColorScheme = lightColorScheme(
     onError = Color.White
 )
 
+
+
 @Composable
 fun ScanWiseTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val baseColorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
+    val animatedColorScheme = ColorScheme(
+        primary = animateColorAsState(baseColorScheme.primary, tween(400)).value,
+        onPrimary = animateColorAsState(baseColorScheme.onPrimary, tween(400)).value,
+        primaryContainer = animateColorAsState(baseColorScheme.primaryContainer, tween(400)).value,
+        onPrimaryContainer = animateColorAsState(baseColorScheme.onPrimaryContainer, tween(400)).value,
+        secondary = animateColorAsState(baseColorScheme.secondary, tween(400)).value,
+        onSecondary = animateColorAsState(baseColorScheme.onSecondary, tween(400)).value,
+        secondaryContainer = animateColorAsState(baseColorScheme.secondaryContainer, tween(400)).value,
+        onSecondaryContainer = animateColorAsState(baseColorScheme.onSecondaryContainer, tween(400)).value,
+        tertiary = animateColorAsState(baseColorScheme.tertiary, tween(400)).value,
+        onTertiary = animateColorAsState(baseColorScheme.onTertiary, tween(400)).value,
+        tertiaryContainer = animateColorAsState(baseColorScheme.tertiaryContainer, tween(400)).value,
+        onTertiaryContainer = animateColorAsState(baseColorScheme.onTertiaryContainer, tween(400)).value,
+        background = animateColorAsState(baseColorScheme.background, tween(400)).value,
+        onBackground = animateColorAsState(baseColorScheme.onBackground, tween(400)).value,
+        surface = animateColorAsState(baseColorScheme.surface, tween(400)).value,
+        onSurface = animateColorAsState(baseColorScheme.onSurface, tween(400)).value,
+        surfaceVariant = animateColorAsState(baseColorScheme.surfaceVariant, tween(400)).value,
+        onSurfaceVariant = animateColorAsState(baseColorScheme.onSurfaceVariant, tween(400)).value,
+        surfaceTint = animateColorAsState(baseColorScheme.surfaceTint, tween(400)).value,
+        outline = animateColorAsState(baseColorScheme.outline, tween(400)).value,
+        outlineVariant = animateColorAsState(baseColorScheme.outlineVariant, tween(400)).value,
+        error = animateColorAsState(baseColorScheme.error, tween(400)).value,
+        onError = animateColorAsState(baseColorScheme.onError, tween(400)).value,
+        errorContainer = animateColorAsState(baseColorScheme.errorContainer, tween(400)).value,
+        onErrorContainer = animateColorAsState(baseColorScheme.onErrorContainer, tween(400)).value,
+        inverseOnSurface = animateColorAsState(baseColorScheme.inverseOnSurface, tween(400)).value,
+        inverseSurface = animateColorAsState(baseColorScheme.inverseSurface, tween(400)).value,
+        inversePrimary = animateColorAsState(baseColorScheme.inversePrimary, tween(400)).value,
+        scrim = animateColorAsState(baseColorScheme.scrim, tween(400)).value,
+    )
 
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
             @Suppress("DEPRECATION")
-            window.statusBarColor = colorScheme.background.toArgb()
+            window.statusBarColor = baseColorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = animatedColorScheme,
         typography = ScanWiseTypography,
         content = content
     )
