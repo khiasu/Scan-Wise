@@ -101,12 +101,22 @@ fun SettingsScreen() {
         )
         Spacer(modifier = Modifier.height(12.dp))
 
+        val providerDisplayName = remember(provider) {
+            when (provider) {
+                SecurePrefs.Provider.OFFLINE -> "On-Device OCR (Free, Offline)"
+                SecurePrefs.Provider.GROQ -> "Groq Cloud (Free Tier Llama)"
+                SecurePrefs.Provider.GEMINI -> "Google Gemini"
+                SecurePrefs.Provider.OPENAI -> "OpenAI GPT"
+                SecurePrefs.Provider.CLAUDE -> "Anthropic Claude"
+            }
+        }
+
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = it }
         ) {
             OutlinedTextField(
-                value = provider.name,
+                value = providerDisplayName,
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Selected Provider") },
@@ -121,8 +131,15 @@ fun SettingsScreen() {
                 onDismissRequest = { expanded = false }
             ) {
                 SecurePrefs.Provider.entries.forEach { p ->
+                    val displayName = when (p) {
+                        SecurePrefs.Provider.OFFLINE -> "On-Device OCR (Free, Offline)"
+                        SecurePrefs.Provider.GROQ -> "Groq Cloud (Free Tier Llama)"
+                        SecurePrefs.Provider.GEMINI -> "Google Gemini"
+                        SecurePrefs.Provider.OPENAI -> "OpenAI GPT"
+                        SecurePrefs.Provider.CLAUDE -> "Anthropic Claude"
+                    }
                     DropdownMenuItem(
-                        text = { Text(p.name) },
+                        text = { Text(displayName) },
                         onClick = {
                             provider = p
                             expanded = false
@@ -134,35 +151,82 @@ fun SettingsScreen() {
 
         Spacer(Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = apiKey,
-            onValueChange = { apiKey = it },
-            label = { Text("Engine API Key (${provider.name})") },
-            visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                TextButton(onClick = { showKey = !showKey }) {
-                    Text(if (showKey) "Hide" else "Show")
+        if (provider == SecurePrefs.Provider.OFFLINE) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                ),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Engine Ready",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "On-device processing works 100% offline. No API keys or internet connection required.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        )
+            }
+        } else {
+            OutlinedTextField(
+                value = apiKey,
+                onValueChange = { apiKey = it },
+                label = { Text("Engine API Key (${provider.name})") },
+                visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    TextButton(onClick = { showKey = !showKey }) {
+                        Text(if (showKey) "Hide" else "Show")
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
 
-        // Get key link helper
-        Text(
-            text = when (provider) {
+            // Get key link helper
+            val keyHelperText = when (provider) {
+                SecurePrefs.Provider.GROQ -> "Acquire a developer key at console.groq.com/keys"
                 SecurePrefs.Provider.GEMINI -> "Acquire a developer key at aistudio.google.com/apikey"
                 SecurePrefs.Provider.OPENAI -> "Acquire a developer key at platform.openai.com/api-keys"
                 SecurePrefs.Provider.CLAUDE -> "Acquire a developer key at console.anthropic.com"
-            },
-            style = MaterialTheme.typography.bodySmall.copy(
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            ),
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
+                else -> ""
+            }
+            if (keyHelperText.isNotEmpty()) {
+                Text(
+                    text = keyHelperText,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+        }
 
         Spacer(Modifier.height(28.dp))
 

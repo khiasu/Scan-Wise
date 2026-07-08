@@ -25,6 +25,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
@@ -85,4 +86,7 @@ dependencies {
     // PDF page rasterization is done with android.graphics.pdf.PdfRenderer (built-in, no dep needed)
 
     implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // On-device OCR (offline text extraction, no API key needed)
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 }

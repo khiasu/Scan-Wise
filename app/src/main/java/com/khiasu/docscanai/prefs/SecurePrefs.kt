@@ -16,7 +16,13 @@ import androidx.security.crypto.MasterKey
  */
 object SecurePrefs {
 
-    enum class Provider { GEMINI, OPENAI, CLAUDE }
+    enum class Provider {
+        OFFLINE,  // On-device ML Kit OCR — no key, no internet
+        GROQ,     // Groq free tier — Llama 3.2 Vision
+        GEMINI,   // Google Gemini
+        OPENAI,   // OpenAI GPT-4 Vision
+        CLAUDE    // Anthropic Claude
+    }
 
     private const val FILE_NAME = "secure_prefs"
     private const val KEY_PROVIDER = "provider"
@@ -38,13 +44,20 @@ object SecurePrefs {
     }
 
     fun getProvider(context: Context): Provider {
-        val name = prefs(context).getString(KEY_PROVIDER, Provider.GEMINI.name)
-        return runCatching { Provider.valueOf(name ?: Provider.GEMINI.name) }.getOrDefault(Provider.GEMINI)
+        val name = prefs(context).getString(KEY_PROVIDER, Provider.OFFLINE.name)
+        return runCatching { Provider.valueOf(name ?: Provider.OFFLINE.name) }.getOrDefault(Provider.OFFLINE)
     }
 
     fun getApiKey(context: Context): String =
         prefs(context).getString(KEY_API_KEY, "") ?: ""
 
+    /** Returns true if the current provider can operate (offline always can, cloud needs a key). */
+    fun isReady(context: Context): Boolean {
+        val provider = getProvider(context)
+        return provider == Provider.OFFLINE || getApiKey(context).isNotBlank()
+    }
+
+    /** Legacy compat — true if a cloud API key is configured. */
     fun hasApiKey(context: Context): Boolean = getApiKey(context).isNotBlank()
 
     fun clear(context: Context) {

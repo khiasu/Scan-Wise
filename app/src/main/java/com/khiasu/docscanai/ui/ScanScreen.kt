@@ -142,12 +142,12 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            var hasApiKey by remember { mutableStateOf(SecurePrefs.hasApiKey(context)) }
+            var isReady by remember { mutableStateOf(SecurePrefs.isReady(context)) }
             LaunchedEffect(Unit) {
-                hasApiKey = SecurePrefs.hasApiKey(context)
+                isReady = SecurePrefs.isReady(context)
             }
 
-            if (!hasApiKey) {
+            if (!isReady) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -179,7 +179,7 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Configure your API key in Settings before digitizing documents.",
+                                text = "Configure your API key in Settings before digitizing documents with this cloud engine.",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
