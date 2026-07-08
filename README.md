@@ -2,7 +2,7 @@
 
 [![Download APK](https://img.shields.io/badge/Download-Latest%20APK-vividpurple?style=for-the-badge&logo=android)](https://github.com/khiasu/Scan-Wise/releases)
 
-ScanWise is a premium, privacy-first Android document scanner and digitizer. It captures physical documents via camera, imports gallery images, or rasterizes PDF files, and extracts structured text.
+ScanWise is a privacy-first Android document scanner and digitizer. It captures physical documents via camera, imports gallery images, or rasterizes PDF files, and extracts structured text.
 
 By default, ScanWise runs **completely offline on-device** (no API keys, no internet required). For advanced parsing, you can optionally configure free or premium cloud AI engines.
 
