@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
  * Free-tier friendly: gemini-1.5-flash / gemini-2.0-flash have generous free quotas.
  */
 class GeminiClient(
-    private val model: String = "gemini-2.0-flash"
+    private val model: String = "gemini-1.5-flash"
 ) : AiClient {
 
     private val http = OkHttpClient.Builder()
