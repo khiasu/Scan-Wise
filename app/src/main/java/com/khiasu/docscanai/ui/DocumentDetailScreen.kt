@@ -158,10 +158,8 @@ fun DocumentDetailScreen(docId: Long) {
                                 )
                             }
                             "ERROR" -> {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                Column(
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
                                         text = page.errorMessage ?: "Unknown extraction error",
@@ -169,14 +167,15 @@ fun DocumentDetailScreen(docId: Long) {
                                             color = Color(0xFFEF4444),
                                             fontWeight = FontWeight.Medium
                                         ),
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.fillMaxWidth()
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     TextButton(
                                         onClick = { scope.launch { repo.retryPage(page.id) } },
                                         colors = ButtonDefaults.textButtonColors(
                                             contentColor = MaterialTheme.colorScheme.primary
-                                        )
+                                        ),
+                                        modifier = Modifier.align(Alignment.End)
                                     ) {
                                         Icon(Icons.Default.Refresh, contentDescription = "Retry")
                                         Spacer(modifier = Modifier.width(4.dp))
