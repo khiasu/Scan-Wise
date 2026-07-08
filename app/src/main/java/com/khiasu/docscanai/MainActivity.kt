@@ -20,10 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import com.khiasu.docscanai.prefs.ThemePrefs
 import com.khiasu.docscanai.ui.AppRoot
 import com.khiasu.docscanai.ui.theme.ScanWiseTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,17 +70,17 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun SplashScreen(onFinished: () -> Unit) {
-    val scale = remember { Animatable(0f) }
+    val scale = remember { Animatable(0.9f) }
 
     LaunchedEffect(Unit) {
         scale.animateTo(
             targetValue = 1f,
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
+                stiffness = Spring.StiffnessMedium
             )
         )
-        delay(1200)
+        delay(1000)
         onFinished()
     }
 
