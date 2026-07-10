@@ -1,36 +1,33 @@
-# ScanWise
+# Question Bank Digitizer
 
-[![Download APK](https://img.shields.io/badge/Download-Latest%20APK-vividpurple?style=for-the-badge&logo=android)](https://github.com/khiasu/Scan-Wise/releases)
-
-ScanWise is a privacy-first Android document scanner and digitizer. It captures physical documents via camera, imports gallery images, or rasterizes PDF files, and extracts structured text.
-
-By default, ScanWise runs **completely offline on-device** (no API keys, no internet required). For advanced parsing, you can optionally configure free or premium cloud AI engines.
+Question Bank Digitizer is a minimal, professional Android application designed for educators, teachers, and students to digitize physical test papers, compile structured question sheets, generate answer keys, and run interactive practice quizzes.
 
 ---
 
 ## Key Features
 
-- **On-Device OCR (Offline & Free)**: Powered by Google ML Kit. Digitizes documents locally in milliseconds without sending any data off your device. No API keys needed.
-- **Multiple Engines (BYOK)**: Connect your own API key to run state-of-the-art vision models:
-  - **Groq Cloud**: Free, ultra-fast Llama 3.2 Vision engine.
-  - **Google Gemini**: Generous free-tier via Gemini Flash.
-  - **OpenAI GPT / Anthropic Claude**: Premium cloud intelligence.
-- **True AMOLED Black Theme**: Fully optimized dark mode built with deep violet accents and pure black background (`#000000`) to maximize battery savings on OLED screens.
-- **Seamless Document Exports**: Redesigned, non-clipping export menu to output documents as PDF, DOCX (Word), CSV (Spreadsheet), or JSON (Metadata).
-- **Direct Actions**: Instant "Open File" and "Share" options on export completion dialogs.
-- **Hardware-Backed Encryption**: Stored credentials are encrypted on-device using AES-256 and backed by the Android Keystore system.
+- **Two-Step Question Digitizer Pipeline**:
+  - **Fast OCR Transcription**: Performs rapid text transcription of scanned pages to avoid API timeouts.
+  - **Interactive Question Solver**: A single click instructs the AI model to extract questions, solve multiple-choice and subjective problems, and write concise explanations and hints.
+- **Interactive Practice Quizzes**:
+  - Test yourself or students directly inside the app.
+  - **Multiple-Choice Questions (MCQs)**: Renders clickable options with instant visual grading (green/red feedback), score counts, and solution walkthroughs.
+  - **Subjective Questions**: Write responses, review model answer rubrics, and self-grade.
+- **Engaging Page History**:
+  - Tracks scanned pages with decoded thumbnail image previews that remain visible during background processing.
+  - Delete individual pages from document history or edit the transcribed text manually to correct formatting.
+- **Structured Spreadsheet & Document Exports**:
+  - **CSV Export**: Splits questions cleanly into spreadsheet columns: `Page, Question Number, Type, Marks, Question, Paraphrased Question, Option A/B/C/D, Correct Answer, Explanation, Hint`.
+  - **JSON Export**: Serializes solved data into fully parsed JSON models.
+  - **PDF & Word (DOCX)**: Outputs beautifully formatted question sheets and solution booklets.
+- **Hardware-Backed Encryption**: Cloud API credentials (Gemini, Groq Cloud, OpenAI, Anthropic Claude) are encrypted on-device using AES-256 GCM sealed inside the Android Keystore System.
 
 ---
 
 ## Quick Start
 
-1. Download and install the [latest APK](https://github.com/khiasu/Scan-Wise/releases) on your Android device (API 26+).
-2. Open the app — it runs on **On-Device OCR** by default out-of-the-box.
-3. Tap **Scan**, capture pages or select a PDF, and click **Process & Save Document** to process.
-4. (Optional) Go to **Settings**, choose a cloud provider (e.g. Groq Cloud), enter your API key, and click Save.
-
----
-
-## Documentation
-
-For developers, structural details, database schemas, and building layouts are documented in [DOCUMENTATION.md](file:///e:/QuestBank_AI/DOCUMENTATION.md).
+1. Download and install the latest release APK.
+2. Go to **Settings**, choose a cloud provider (e.g. Google Gemini or Groq Cloud), enter your API key, and click Save.
+3. Tap **Scan**, capture pages or import a PDF, and tap **Process & Save** to add it to history.
+4. Open the document, head to the **Question Bank** tab, and click **Solve & Generate Answers** to solve the questions.
+5. Practice the solved questions under the **Practice Quiz** tab, or export the paper using the **Export** menu.
