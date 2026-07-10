@@ -57,7 +57,49 @@ class OpenAiClient(
                         .getJSONObject(0)
                         .getJSONObject("message")
                         .getString("content")
-                    Result.success(parseExtractionJson(text))
+                    val usage = json.optJSONObject("usage")
+                    val promptTokens = usage?.optInt("prompt_tokens") ?: 0
+                    val completionTokens = usage?.optInt("completion_tokens") ?: 0
+                    val base = parseExtractionJson(text)
+                    Result.success(base.copy(promptTokens = promptTokens, completionTokens = completionTokens))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun solve(apiKey: String, rawText: String): Result<ExtractionResult> =
+        withContext(Dispatchers.IO) {
+            try {
+                val prompt = SOLVE_PROMPT.replace("${'$'}transcription", rawText)
+                val body = JSONObject().apply {
+                    put("model", model)
+                    put("response_format", JSONObject().put("type", "json_object"))
+                    put("messages", JSONArray().put(JSONObject().apply {
+                        put("role", "user")
+                        put("content", prompt)
+                    }))
+                }
+                val request = Request.Builder()
+                    .url("https://api.openai.com/v1/chat/completions")
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .post(body.toString().toRequestBody("application/json".toMediaType()))
+                    .build()
+                http.newCall(request).execute().use { resp ->
+                    val respBody = resp.body?.string().orEmpty()
+                    if (!resp.isSuccessful) {
+                        return@withContext Result.failure(Exception("OpenAI error ${resp.code}: $respBody"))
+                    }
+                    val json = JSONObject(respBody)
+                    val text = json.getJSONArray("choices")
+                        .getJSONObject(0)
+                        .getJSONObject("message")
+                        .getString("content")
+                    val usage = json.optJSONObject("usage")
+                    val promptTokens = usage?.optInt("prompt_tokens") ?: 0
+                    val completionTokens = usage?.optInt("completion_tokens") ?: 0
+                    val base = parseExtractionJson(text)
+                    Result.success(base.copy(promptTokens = promptTokens, completionTokens = completionTokens))
                 }
             } catch (e: Exception) {
                 Result.failure(e)

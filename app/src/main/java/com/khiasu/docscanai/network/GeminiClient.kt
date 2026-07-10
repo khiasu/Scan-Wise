@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
  * Free-tier friendly: gemini-1.5-flash / gemini-2.0-flash have generous free quotas.
  */
 class GeminiClient(
-    private val model: String = "gemini-1.5-flash"
+    private val model: String = "gemini-2.5-flash"
 ) : AiClient {
 
     private val http = OkHttpClient.Builder()
@@ -33,14 +33,15 @@ class GeminiClient(
                     put("contents", JSONArray().put(JSONObject().apply {
                         put("parts", JSONArray().apply {
                             put(JSONObject().put("text", EXTRACTION_PROMPT))
-                            put(JSONObject().put("inline_data", JSONObject().apply {
-                                put("mime_type", "image/jpeg")
+                            put(JSONObject().put("inlineData", JSONObject().apply {
+                                put("mimeType", "image/jpeg")
                                 put("data", base64Image)
                             }))
                         })
                     }))
-                    put("generationConfig", JSONObject().put("response_mime_type", "application/json"))
+                    put("generationConfig", JSONObject().put("responseMimeType", "application/json"))
                 }
+                android.util.Log.d("GeminiClient", "request payload: " + body.toString())
 
                 val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
                 val request = Request.Builder()
@@ -60,7 +61,49 @@ class GeminiClient(
                         .getJSONArray("parts")
                         .getJSONObject(0)
                         .getString("text")
-                    Result.success(parseExtractionJson(text))
+                    val usage = json.optJSONObject("usageMetadata")
+                    val promptTokens = usage?.optInt("promptTokenCount") ?: 0
+                    val completionTokens = usage?.optInt("candidatesTokenCount") ?: 0
+                    val base = parseExtractionJson(text)
+                    Result.success(base.copy(promptTokens = promptTokens, completionTokens = completionTokens))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun solve(apiKey: String, rawText: String): Result<ExtractionResult> =
+        withContext(Dispatchers.IO) {
+            try {
+                val prompt = SOLVE_PROMPT.replace("${'$'}transcription", rawText)
+                val body = JSONObject().apply {
+                    put("contents", JSONArray().put(JSONObject().apply {
+                        put("parts", JSONArray().put(JSONObject().put("text", prompt)))
+                    }))
+                    put("generationConfig", JSONObject().put("responseMimeType", "application/json"))
+                }
+                val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
+                val request = Request.Builder()
+                    .url(url)
+                    .post(body.toString().toRequestBody("application/json".toMediaType()))
+                    .build()
+                http.newCall(request).execute().use { resp ->
+                    val respBody = resp.body?.string().orEmpty()
+                    if (!resp.isSuccessful) {
+                        return@withContext Result.failure(Exception("Gemini error ${resp.code}: $respBody"))
+                    }
+                    val json = JSONObject(respBody)
+                    val text = json.getJSONArray("candidates")
+                        .getJSONObject(0)
+                        .getJSONObject("content")
+                        .getJSONArray("parts")
+                        .getJSONObject(0)
+                        .getString("text")
+                    val usage = json.optJSONObject("usageMetadata")
+                    val promptTokens = usage?.optInt("promptTokenCount") ?: 0
+                    val completionTokens = usage?.optInt("candidatesTokenCount") ?: 0
+                    val base = parseExtractionJson(text)
+                    Result.success(base.copy(promptTokens = promptTokens, completionTokens = completionTokens))
                 }
             } catch (e: Exception) {
                 Result.failure(e)

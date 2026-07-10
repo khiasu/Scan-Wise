@@ -34,5 +34,8 @@ data class PageEntity(
     val status: String = "PENDING", // PENDING, PROCESSING, DONE, ERROR
     val rawText: String? = null,    // full OCR text returned by the AI
     val fieldsJson: String? = null, // JSON array of {"key":..,"value":..} extracted by the AI
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val promptTokens: Int = 0,
+    val completionTokens: Int = 0,
+    val providerUsed: String = ""
 )

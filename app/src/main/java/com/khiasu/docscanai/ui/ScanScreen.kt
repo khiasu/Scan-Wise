@@ -124,7 +124,7 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
                         )
                     )
                     Text(
-                        text = "Document Digitization",
+                        text = "Question Bank Digitizer",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -179,7 +179,7 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Configure your API key in Settings before digitizing documents with this cloud engine.",
+                                text = "Configure your API key in Settings to begin processing question banks.",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
@@ -212,13 +212,13 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Capture & Digitize",
+                        text = "New Question Bank",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Instantly scan document pages, import high-resolution images, or extract text directly from PDF files.",
+                        text = "Scan exam papers and test sheets to instantly organize questions, compile keys, and practice with mock quizzes.",
                         style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                         textAlign = TextAlign.Center
                     )

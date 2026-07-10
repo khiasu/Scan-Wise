@@ -23,12 +23,9 @@ class ProcessPageWorker(
         const val KEY_PAGE_ID = "page_id"
 
         fun enqueueFor(context: Context, pageId: Long, chainTag: String) {
-            val provider = SecurePrefs.getProvider(context)
-            val constraints = Constraints.Builder().apply {
-                if (provider != SecurePrefs.Provider.OFFLINE) {
-                    setRequiredNetworkType(NetworkType.CONNECTED)
-                }
-            }.build()
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
 
             val request = OneTimeWorkRequestBuilder<ProcessPageWorker>()
                 .setInputData(workDataOf(KEY_PAGE_ID to pageId))
@@ -47,8 +44,7 @@ class ProcessPageWorker(
         val dao = db.docDao()
         val page = dao.getPage(pageId) ?: return Result.failure()
 
-        val provider = SecurePrefs.getProvider(applicationContext)
-        if (provider != SecurePrefs.Provider.OFFLINE && !SecurePrefs.hasApiKey(applicationContext)) {
+        if (!SecurePrefs.hasApiKey(applicationContext)) {
             dao.updatePage(page.copy(status = "ERROR", errorMessage = "No API key set in Settings"))
             return Result.failure()
         }
@@ -74,6 +70,9 @@ class ProcessPageWorker(
                             status = "DONE",
                             rawText = extraction.rawText,
                             fieldsJson = fieldsJson,
+                            promptTokens = extraction.promptTokens,
+                            completionTokens = extraction.completionTokens,
+                            providerUsed = provider.name,
                             errorMessage = null
                         )
                     )

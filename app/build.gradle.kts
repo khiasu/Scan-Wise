@@ -87,6 +87,4 @@ dependencies {
 
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-    // On-device OCR (offline text extraction, no API key needed - thin client Play Services model)
-    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.0")
 }

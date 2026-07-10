@@ -6,6 +6,7 @@ import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import com.khiasu.docscanai.worker.ProcessPageWorker
+import com.khiasu.docscanai.prefs.SecurePrefs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -21,6 +22,8 @@ class ScanRepository(private val context: Context) {
     suspend fun getDocument(docId: Long) = dao.getDocument(docId)
     suspend fun getPages(docId: Long) = dao.getPages(docId)
     suspend fun deleteDocument(docId: Long) = dao.deleteDocument(docId)
+    suspend fun updatePage(page: PageEntity) = dao.updatePage(page)
+    suspend fun getAllDonePages() = dao.getAllDonePages()
 
     /** Called once per photo the user takes/picks - "scan one by one". Appends to an in-progress doc. */
     suspend fun createDocumentFromImages(title: String, imageUris: List<Uri>, sourceType: String): Long =
@@ -68,6 +71,77 @@ class ScanRepository(private val context: Context) {
     /** Lets the user re-run a failed page after fixing their API key/network. */
     suspend fun retryPage(pageId: Long) {
         ProcessPageWorker.enqueueFor(context, pageId, "retry_$pageId")
+    }
+
+    /** Solves the questions on a page using its raw text content. */
+    suspend fun solvePage(pageId: Long): Result<Unit> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            val page = dao.getPage(pageId) ?: return@withContext Result.failure(Exception("Page not found"))
+            val rawText = page.rawText.orEmpty()
+            if (rawText.isBlank()) {
+                return@withContext Result.failure(Exception("Page raw text is empty. Run scan first."))
+            }
+            
+            val provider = SecurePrefs.getProvider(context)
+            val apiKey = SecurePrefs.getApiKey(context)
+            val client = com.khiasu.docscanai.network.AiClientFactory.create(provider)
+            
+            val apiResult = client.solve(apiKey, rawText)
+            apiResult.fold(
+                onSuccess = { extraction ->
+                    val fieldsJson = org.json.JSONArray().apply {
+                        extraction.fields.forEach {
+                            put(org.json.JSONObject().put("key", it.key).put("value", it.value))
+                        }
+                    }.toString()
+                    
+                    // Format questions and answers into rawText so users can edit them in the Page Editor
+                    val formattedBuilder = java.lang.StringBuilder()
+                    extraction.fields.forEach { field ->
+                        val parsed = parseQuestionValue(field.value)
+                        formattedBuilder.append("=== ").append(field.key).append(" ===\n")
+                        formattedBuilder.append("Question: ").append(parsed.question).append("\n")
+                        if (parsed.type.equals("MCQ", ignoreCase = true)) {
+                            parsed.options.forEach { (k, v) ->
+                                formattedBuilder.append("  ").append(k).append(") ").append(v).append("\n")
+                            }
+                            formattedBuilder.append("Answer Key: ").append(parsed.answerKey.uppercase())
+                            if (parsed.answerText.isNotEmpty()) {
+                                formattedBuilder.append(" (").append(parsed.answerText).append(")")
+                            }
+                            formattedBuilder.append("\n")
+                        } else {
+                            formattedBuilder.append("Answer: ").append(parsed.answerKey).append("\n")
+                        }
+                        if (parsed.explanation.isNotEmpty()) {
+                            formattedBuilder.append("Explanation: ").append(parsed.explanation).append("\n")
+                        }
+                        formattedBuilder.append("\n")
+                    }
+                    val finalRawText = formattedBuilder.toString().trim()
+                    
+                    dao.updatePage(
+                        page.copy(
+                            fieldsJson = fieldsJson,
+                            rawText = if (finalRawText.isNotEmpty()) finalRawText else rawText,
+                            promptTokens = page.promptTokens + extraction.promptTokens,
+                            completionTokens = page.completionTokens + extraction.completionTokens,
+                            providerUsed = provider.name
+                        )
+                    )
+                    Result.success(Unit)
+                },
+                onFailure = { e ->
+                    Result.failure(e)
+                }
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deletePage(pageId: Long) = withContext(Dispatchers.IO) {
+        dao.deletePage(pageId)
     }
 
     private fun copyUriToLocalFile(uri: Uri): String {

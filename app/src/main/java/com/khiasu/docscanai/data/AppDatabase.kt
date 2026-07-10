@@ -35,9 +35,15 @@ interface DocDao {
 
     @Query("DELETE FROM documents WHERE id = :docId")
     suspend fun deleteDocument(docId: Long)
+
+    @Query("DELETE FROM pages WHERE id = :pageId")
+    suspend fun deletePage(pageId: Long)
+
+    @Query("SELECT * FROM pages WHERE status = 'DONE'")
+    suspend fun getAllDonePages(): List<PageEntity>
 }
 
-@Database(entities = [DocumentEntity::class, PageEntity::class], version = 1, exportSchema = false)
+@Database(entities = [DocumentEntity::class, PageEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun docDao(): DocDao
 
@@ -50,7 +56,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "docscanai.db"
-                ).build().also { INSTANCE = it }
+                ).fallbackToDestructiveMigration().build().also { INSTANCE = it }
             }
     }
 }

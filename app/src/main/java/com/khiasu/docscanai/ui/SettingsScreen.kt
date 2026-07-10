@@ -23,8 +23,13 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.khiasu.docscanai.MainActivity
-import com.khiasu.docscanai.prefs.SecurePrefs
 import androidx.compose.ui.window.Dialog
+import com.khiasu.docscanai.prefs.SecurePrefs
+import com.khiasu.docscanai.data.ScanRepository
+import com.khiasu.docscanai.network.ApiPricing
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +39,33 @@ fun SettingsScreen() {
     var apiKey by remember { mutableStateOf(SecurePrefs.getApiKey(context)) }
     var showKey by remember { mutableStateOf(false) }
     var savedMessage by remember { mutableStateOf<String?>(null) }
-    var expanded by remember { mutableStateOf(false) }
+    
+    val repo = remember { ScanRepository(context) }
+    val scope = rememberCoroutineScope()
+    
+    var totalCostInr by remember { mutableStateOf(0.0) }
+    var totalPromptTokens by remember { mutableStateOf(0) }
+    var totalCompletionTokens by remember { mutableStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        scope.launch(Dispatchers.IO) {
+            val pages = repo.getAllDonePages()
+            var costSum = 0.0
+            var pTokens = 0
+            var cTokens = 0
+            pages.forEach { page ->
+                val pUsed = page.providerUsed.ifEmpty { "GEMINI" }
+                costSum += ApiPricing.calculateCostInr(pUsed, page.promptTokens, page.completionTokens)
+                pTokens += page.promptTokens
+                cTokens += page.completionTokens
+            }
+            withContext(Dispatchers.Main) {
+                totalCostInr = costSum
+                totalPromptTokens = pTokens
+                totalCompletionTokens = cTokens
+            }
+        }
+    }
 
 
     Column(
@@ -104,7 +135,6 @@ fun SettingsScreen() {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             SecurePrefs.Provider.entries.forEach { p ->
                 val (title, subtitle, icon) = when (p) {
-                    SecurePrefs.Provider.OFFLINE -> Triple("On-Device OCR (Offline)", "100% Free, offline local text reader", Icons.Default.WifiOff)
                     SecurePrefs.Provider.GROQ -> Triple("Groq Cloud (Free Llama)", "High-speed free Llama 3.2 Vision", Icons.Default.Cloud)
                     SecurePrefs.Provider.GEMINI -> Triple("Google Gemini", "Generous free tier with Gemini Flash", Icons.Default.Star)
                     SecurePrefs.Provider.OPENAI -> Triple("OpenAI GPT", "GPT-4 Vision completions engine", Icons.Default.Lock)
@@ -158,81 +188,38 @@ fun SettingsScreen() {
 
         Spacer(Modifier.height(20.dp))
 
-        if (provider == SecurePrefs.Provider.OFFLINE) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
-                ),
-                border = BorderStroke(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Engine Ready",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "On-device processing works 100% offline. No API keys or internet connection required.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+        OutlinedTextField(
+            value = apiKey,
+            onValueChange = { apiKey = it },
+            label = { Text("Engine API Key (${provider.name})") },
+            visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                TextButton(onClick = { showKey = !showKey }) {
+                    Text(if (showKey) "Hide" else "Show")
                 }
-            }
-        } else {
-            OutlinedTextField(
-                value = apiKey,
-                onValueChange = { apiKey = it },
-                label = { Text("Engine API Key (${provider.name})") },
-                visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    TextButton(onClick = { showKey = !showKey }) {
-                        Text(if (showKey) "Hide" else "Show")
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // Get key link helper
+        val keyHelperText = when (provider) {
+            SecurePrefs.Provider.GROQ -> "Acquire a developer key at console.groq.com/keys"
+            SecurePrefs.Provider.GEMINI -> "Acquire a developer key at aistudio.google.com/apikey"
+            SecurePrefs.Provider.OPENAI -> "Acquire a developer key at platform.openai.com/api-keys"
+            SecurePrefs.Provider.CLAUDE -> "Acquire a developer key at console.anthropic.com"
+        }
+        if (keyHelperText.isNotEmpty()) {
+            Text(
+                text = keyHelperText,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                modifier = Modifier.padding(horizontal = 4.dp)
             )
-
-            Spacer(Modifier.height(12.dp))
-
-            // Get key link helper
-            val keyHelperText = when (provider) {
-                SecurePrefs.Provider.GROQ -> "Acquire a developer key at console.groq.com/keys"
-                SecurePrefs.Provider.GEMINI -> "Acquire a developer key at aistudio.google.com/apikey"
-                SecurePrefs.Provider.OPENAI -> "Acquire a developer key at platform.openai.com/api-keys"
-                SecurePrefs.Provider.CLAUDE -> "Acquire a developer key at console.anthropic.com"
-                else -> ""
-            }
-            if (keyHelperText.isNotEmpty()) {
-                Text(
-                    text = keyHelperText,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-            }
         }
 
         Spacer(Modifier.height(28.dp))
@@ -265,6 +252,73 @@ fun SettingsScreen() {
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                 )
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        // API Cost Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f)
+            ),
+            border = BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "API Cost & Usage Tracker",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Icon(
+                        imageVector = Icons.Default.TrendingUp,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "Estimated Cost",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "₹${"%.4f".format(totalCostInr)} INR",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "Tokens Consumed",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${totalPromptTokens} in / ${totalCompletionTokens} out",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             }
         }
 
