@@ -2,6 +2,9 @@
 
 Question Bank Digitizer is a minimal, professional Android application designed for educators, teachers, and students to digitize physical test papers, compile structured question sheets, generate answer keys, and run interactive practice quizzes.
 
+For developer architecture, database schemas, and system layout details, see [DOCUMENTATION.md](file:///e:/QuestBank_AI/DOCUMENTATION.md).
+For data safety, hardware key storage encryption, and usage rules, see [PRIVACY.md](file:///e:/QuestBank_AI/PRIVACY.md).
+
 ---
 
 ## Key Features

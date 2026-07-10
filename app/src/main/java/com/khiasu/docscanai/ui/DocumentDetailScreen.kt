@@ -494,10 +494,11 @@ fun DocumentDetailScreen(docId: Long) {
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
                                     text = "Extracted Questions (${questionList.size})",
@@ -505,6 +506,7 @@ fun DocumentDetailScreen(docId: Long) {
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Row(
+                                    modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -532,21 +534,23 @@ fun DocumentDetailScreen(docId: Long) {
                                             }
                                         },
                                         shape = RoundedCornerShape(12.dp),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                                        modifier = Modifier.weight(1f)
                                     ) {
                                         Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(6.dp))
-                                        Text("Solve & Regenerate", fontSize = 12.sp)
+                                        Text("Solve & Regenerate", fontSize = 12.sp, maxLines = 1)
                                     }
-                                    OutlinedButton(
+                                    Button(
                                         onClick = { isAddingQuestion = true },
                                         shape = RoundedCornerShape(12.dp),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                        modifier = Modifier.weight(1f)
                                     ) {
                                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(6.dp))
-                                        Text("Add Question", fontSize = 12.sp)
+                                        Text("Add Question", fontSize = 12.sp, maxLines = 1)
                                     }
                                 }
                             }
@@ -1210,7 +1214,7 @@ fun DocumentDetailScreen(docId: Long) {
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            "Gemini is solving the questions and generating answers, explanations, and hints.",
+                            "The selected AI engine is solving the questions and generating answers, explanations, and hints.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center

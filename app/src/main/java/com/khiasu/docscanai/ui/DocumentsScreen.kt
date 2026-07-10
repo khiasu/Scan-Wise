@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.khiasu.docscanai.data.ScanRepository
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlinx.coroutines.launch
 
 @Composable
 fun DocumentsScreen(onOpenDocument: (Long) -> Unit) {
@@ -173,6 +174,22 @@ fun DocumentsScreen(onOpenDocument: (Long) -> Unit) {
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                )
+                            }
+
+                            val scope = rememberCoroutineScope()
+                            IconButton(
+                                onClick = {
+                                    scope.launch {
+                                        repo.deleteDocument(doc.id)
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete Document",
+                                    tint = Color(0xFFEF4444),
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
 
