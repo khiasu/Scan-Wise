@@ -100,7 +100,7 @@ class ScanRepository(private val context: Context) {
                 onSuccess = { extraction ->
                     val processedFields = mutableListOf<com.khiasu.docscanai.network.ExtractedField>()
 
-                    extraction.fields.forEachIndexed { index, field ->
+                    extraction.fields.forEach { field ->
                         var parsed = parseQuestionValue(field.value)
                         
                         // Crop figure if box is found
@@ -124,12 +124,8 @@ class ScanRepository(private val context: Context) {
                                 if (cropW > 0 && cropH > 0) {
                                     try {
                                         val cropped = Bitmap.createBitmap(pageBitmap, left, top, cropW, cropH)
-                                        val figuresDir = File(context.cacheDir, "figures").apply { mkdirs() }
-                                        val figureFile = File(figuresDir, "fig_${pageId}_${index}_${System.currentTimeMillis()}.jpg")
-                                        FileOutputStream(figureFile).use { out ->
-                                            cropped.compress(Bitmap.CompressFormat.JPEG, 90, out)
-                                        }
-                                        savedFigurePath = figureFile.absolutePath
+                                        val base64 = com.khiasu.docscanai.network.bitmapToBase64Jpeg(cropped, 80)
+                                        savedFigurePath = "data:image/jpeg;base64,$base64"
                                     } catch (e: Exception) {
                                         android.util.Log.e("ScanRepository", "Failed to crop figure: ${e.message}")
                                     }

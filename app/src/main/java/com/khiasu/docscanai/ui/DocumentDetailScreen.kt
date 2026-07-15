@@ -560,7 +560,13 @@ fun DocumentDetailScreen(docId: Long) {
                         items(questionList) { item ->
                             val q = item.data
                             val figureBitmap = remember(q.figureImagePath) {
-                                if (q.figureImagePath.isNotEmpty()) {
+                                if (q.figureImagePath.startsWith("data:image/")) {
+                                    runCatching {
+                                        val base64Str = q.figureImagePath.substringAfter("base64,")
+                                        val bytes = android.util.Base64.decode(base64Str, android.util.Base64.DEFAULT)
+                                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                                    }.getOrNull()
+                                } else if (q.figureImagePath.isNotEmpty()) {
                                     runCatching {
                                         BitmapFactory.decodeFile(q.figureImagePath)?.asImageBitmap()
                                     }.getOrNull()
@@ -935,7 +941,13 @@ fun DocumentDetailScreen(docId: Long) {
                     val currentQuestionItem = questionList[currentQuestionIndex]
                     val q = currentQuestionItem.data
                     val quizFigureBitmap = remember(q.figureImagePath) {
-                        if (q.figureImagePath.isNotEmpty()) {
+                        if (q.figureImagePath.startsWith("data:image/")) {
+                            runCatching {
+                                val base64Str = q.figureImagePath.substringAfter("base64,")
+                                val bytes = android.util.Base64.decode(base64Str, android.util.Base64.DEFAULT)
+                                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                            }.getOrNull()
+                        } else if (q.figureImagePath.isNotEmpty()) {
                             runCatching {
                                 BitmapFactory.decodeFile(q.figureImagePath)?.asImageBitmap()
                             }.getOrNull()

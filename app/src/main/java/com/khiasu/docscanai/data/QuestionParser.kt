@@ -79,7 +79,7 @@ fun parseQuestionValue(value: String): ParsedQuestionData {
                     paraphrasedBuilder.append(line)
                 }
                 "OPTIONS" -> {
-                    val optMatch = "^\\s*([a-d])\\s*[\\).\\-]\\s*(.*)$".toRegex(RegexOption.IGNORE_CASE).find(line)
+                    val optMatch = "^\\s*[\\[\\(]?([a-d])[\\]\\)]?\\s*[\\.\\-:]?\\s*(.*)$".toRegex(RegexOption.IGNORE_CASE).find(line)
                     if (optMatch != null) {
                         val letter = optMatch.groupValues[1].lowercase()
                         val text = optMatch.groupValues[2].trim()
