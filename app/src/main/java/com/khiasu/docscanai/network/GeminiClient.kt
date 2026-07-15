@@ -72,13 +72,22 @@ class GeminiClient(
             }
         }
 
-    override suspend fun solve(apiKey: String, rawText: String): Result<ExtractionResult> =
+    override suspend fun solve(apiKey: String, rawText: String, bitmap: Bitmap?): Result<ExtractionResult> =
         withContext(Dispatchers.IO) {
             try {
                 val prompt = SOLVE_PROMPT.replace("${'$'}transcription", rawText)
                 val body = JSONObject().apply {
                     put("contents", JSONArray().put(JSONObject().apply {
-                        put("parts", JSONArray().put(JSONObject().put("text", prompt)))
+                        put("parts", JSONArray().apply {
+                            put(JSONObject().put("text", prompt))
+                            if (bitmap != null) {
+                                val base64Image = bitmapToBase64Jpeg(bitmap)
+                                put(JSONObject().put("inlineData", JSONObject().apply {
+                                    put("mimeType", "image/jpeg")
+                                    put("data", base64Image)
+                                }))
+                            }
+                        })
                     }))
                     put("generationConfig", JSONObject().put("responseMimeType", "application/json"))
                 }

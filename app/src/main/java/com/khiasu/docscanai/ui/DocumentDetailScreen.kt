@@ -34,6 +34,7 @@ import com.khiasu.docscanai.data.serializeQuestionValue
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
+import android.graphics.BitmapFactory
 import kotlinx.coroutines.launch
 import com.khiasu.docscanai.export.ExportFormat
 import com.khiasu.docscanai.export.ExportManager
@@ -558,6 +559,13 @@ fun DocumentDetailScreen(docId: Long) {
 
                         items(questionList) { item ->
                             val q = item.data
+                            val figureBitmap = remember(q.figureImagePath) {
+                                if (q.figureImagePath.isNotEmpty()) {
+                                    runCatching {
+                                        BitmapFactory.decodeFile(q.figureImagePath)?.asImageBitmap()
+                                    }.getOrNull()
+                                } else null
+                            }
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
@@ -724,6 +732,55 @@ fun DocumentDetailScreen(docId: Long) {
                                         }
                                     }
 
+                                    if (q.figureDescription.isNotEmpty() || figureBitmap != null) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f),
+                                            shape = RoundedCornerShape(10.dp),
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(10.dp),
+                                                verticalAlignment = Alignment.Top
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Image,
+                                                    contentDescription = "Figure",
+                                                    tint = MaterialTheme.colorScheme.tertiary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Column {
+                                                    Text(
+                                                        text = "Figure / Diagram",
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                        color = MaterialTheme.colorScheme.tertiary
+                                                    )
+                                                    if (q.figureDescription.isNotEmpty()) {
+                                                        Text(
+                                                            text = q.figureDescription,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurface
+                                                        )
+                                                    }
+                                                    if (figureBitmap != null) {
+                                                        Spacer(modifier = Modifier.height(8.dp))
+                                                        Image(
+                                                            bitmap = figureBitmap,
+                                                            contentDescription = "Diagram Image",
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .heightIn(max = 200.dp)
+                                                                .clip(RoundedCornerShape(8.dp)),
+                                                            contentScale = ContentScale.Fit
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     Spacer(modifier = Modifier.height(14.dp))
 
                                     // Buttons row
@@ -877,6 +934,13 @@ fun DocumentDetailScreen(docId: Long) {
                 } else {
                     val currentQuestionItem = questionList[currentQuestionIndex]
                     val q = currentQuestionItem.data
+                    val quizFigureBitmap = remember(q.figureImagePath) {
+                        if (q.figureImagePath.isNotEmpty()) {
+                            runCatching {
+                                BitmapFactory.decodeFile(q.figureImagePath)?.asImageBitmap()
+                            }.getOrNull()
+                        } else null
+                    }
                     
                     Column(
                         modifier = Modifier
@@ -950,6 +1014,55 @@ fun DocumentDetailScreen(docId: Long) {
                                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
+
+                                if (q.figureDescription.isNotEmpty() || quizFigureBitmap != null) {
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f),
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(10.dp),
+                                            verticalAlignment = Alignment.Top
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Image,
+                                                contentDescription = "Figure",
+                                                tint = MaterialTheme.colorScheme.tertiary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column {
+                                                Text(
+                                                    text = "Figure / Diagram",
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                    color = MaterialTheme.colorScheme.tertiary
+                                                )
+                                                if (q.figureDescription.isNotEmpty()) {
+                                                    Text(
+                                                        text = q.figureDescription,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                }
+                                                if (quizFigureBitmap != null) {
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Image(
+                                                        bitmap = quizFigureBitmap,
+                                                        contentDescription = "Diagram Image",
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .heightIn(max = 200.dp)
+                                                            .clip(RoundedCornerShape(8.dp)),
+                                                        contentScale = ContentScale.Fit
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                         

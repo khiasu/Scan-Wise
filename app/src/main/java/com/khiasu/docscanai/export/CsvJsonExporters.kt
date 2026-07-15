@@ -9,10 +9,10 @@ object CsvExporter {
     /** Merged: one CSV with every field from every page, split into proper columns. */
     fun buildMerged(docTitle: String, pages: List<PageResult>): ByteArray {
         val sb = StringBuilder()
-        sb.append("Page,Question Number,Type,Marks,Question,Paraphrased Question,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Hint\n")
+        sb.append("Page,Question Number,Type,Marks,Question,Paraphrased Question,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Hint,Figure Description\n")
         pages.forEach { page ->
             if (page.fields.isEmpty()) {
-                sb.append("${page.pageIndex + 1},Intro,Subjective,Not specified,${escape(page.rawText)},,,,,,,,\n")
+                sb.append("${page.pageIndex + 1},Intro,Subjective,Not specified,${escape(page.rawText)},,,,,,,,,\n")
             } else {
                 page.fields.forEach { f ->
                     val parsed = parseQuestionValue(f.value)
@@ -28,7 +28,8 @@ object CsvExporter {
                     sb.append("${escape(parsed.options.getOrDefault("d", ""))},")
                     sb.append("${escape(parsed.answerKey)},")
                     sb.append("${escape(parsed.explanation)},")
-                    sb.append("${escape(parsed.hint)}\n")
+                    sb.append("${escape(parsed.hint)},")
+                    sb.append("${escape(parsed.figureDescription)}\n")
                 }
             }
         }
@@ -38,9 +39,9 @@ object CsvExporter {
     /** Per-page: one CSV for a single page's fields. */
     fun buildSinglePage(page: PageResult): ByteArray {
         val sb = StringBuilder()
-        sb.append("Question Number,Type,Marks,Question,Paraphrased Question,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Hint\n")
+        sb.append("Question Number,Type,Marks,Question,Paraphrased Question,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Hint,Figure Description\n")
         if (page.fields.isEmpty()) {
-            sb.append("Intro,Subjective,Not specified,${escape(page.rawText)},,,,,,,,\n")
+            sb.append("Intro,Subjective,Not specified,${escape(page.rawText)},,,,,,,,,\n")
         } else {
             page.fields.forEach { f ->
                 val parsed = parseQuestionValue(f.value)
@@ -55,7 +56,8 @@ object CsvExporter {
                 sb.append("${escape(parsed.options.getOrDefault("d", ""))},")
                 sb.append("${escape(parsed.answerKey)},")
                 sb.append("${escape(parsed.explanation)},")
-                sb.append("${escape(parsed.hint)}\n")
+                sb.append("${escape(parsed.hint)},")
+                sb.append("${escape(parsed.figureDescription)}\n")
             }
         }
         return sb.toString().toByteArray()
@@ -92,6 +94,7 @@ object JsonExporter {
                     put("answer_text", parsed.answerText)
                     put("explanation", parsed.explanation)
                     put("hint", parsed.hint)
+                    put("figure_description", parsed.figureDescription)
                 }
                 questionsArr.put(qObj)
             }
@@ -122,6 +125,7 @@ object JsonExporter {
                 put("answer_text", parsed.answerText)
                 put("explanation", parsed.explanation)
                 put("hint", parsed.hint)
+                put("figure_description", parsed.figureDescription)
             }
             questionsArr.put(qObj)
         }

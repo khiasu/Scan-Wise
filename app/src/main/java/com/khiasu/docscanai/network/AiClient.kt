@@ -17,17 +17,19 @@ data class ExtractionResult(
 /** Prompt used for initial rapid image OCR transcription. */
 const val EXTRACTION_PROMPT = """
 You are a high-accuracy document transcription assistant.
-Transcribe ALL visible text on this page exactly as it appears. Preserve line breaks, paragraphs, questions, options, headings, and lists. Do not add commentary or summary - just return the raw text.
+Transcribe ALL visible text on this page exactly as it appears. Preserve line breaks, paragraphs, questions, options, headings, and lists.
+When you encounter a diagram, figure, graph, chart, or image embedded in the page, insert a marker at that position in the format: [FIGURE: brief description of the visual content]
+Do not add commentary or summary beyond figure markers - just return the raw text.
 Respond with ONLY a valid JSON object in this format (no markdown code block fences like ```json, no extra text):
 {
-  "raw_text": "[Transcribed raw text of the page]",
+  "raw_text": "[Transcribed raw text of the page with [FIGURE: ...] markers]",
   "fields": []
 }
 """
 
 /** Prompt used to solve questions, build MCQ details, correct answers, explanations, and hints from page text. */
 const val SOLVE_PROMPT = """
-You are a Question Bank digitizer. Analyze the following page transcription and extract all questions into structured question details.
+You are a Question Bank digitizer. Analyze the page image (if available) and the transcription to extract all questions into structured details.
 For each question, extract:
 - key: "Question X" (e.g. "Question 1", "Question 2")
 - value: Format it exactly as follows, using newlines (\n) to separate the parts. Keep the explanation and paraphrasing extremely brief (max 1 short sentence). Omit options if it is a subjective question:
@@ -44,6 +46,8 @@ Answer Key: [Correct Option letter (e.g. a, b, c, d) or a brief model answer/rub
 Answer Text: [The exact text of the correct option]
 Explanation: [Explain why the answer is correct in max 1 sentence]
 Hint: [A small tip or clue to help solve it (max 1 sentence)]
+Figure: [If there is an associated diagram/figure in the image near this question, describe it here, else leave blank]
+Figure Box: [If there is a diagram/figure/chart/table image associated with this question, specify its bounding box in ymin,xmin,ymax,xmax format normalized on 0 to 1000 scale relative to the height and width of the image, e.g. [200,150,450,850]. Otherwise write None]
 
 Input Text:
 ${'$'}transcription
@@ -58,8 +62,8 @@ interface AiClient {
     /** Sends one page image to the provider and returns the parsed extraction. */
     suspend fun extract(apiKey: String, bitmap: Bitmap): Result<ExtractionResult>
 
-    /** Solves and parses structured question fields from the page's transcribed raw text. */
-    suspend fun solve(apiKey: String, rawText: String): Result<ExtractionResult>
+    /** Solves and parses structured question fields from the page's transcribed raw text and optional bitmap. */
+    suspend fun solve(apiKey: String, rawText: String, bitmap: Bitmap? = null): Result<ExtractionResult>
 }
 
 fun bitmapToBase64Jpeg(bitmap: Bitmap, quality: Int = 85): String {

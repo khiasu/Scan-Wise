@@ -79,7 +79,7 @@ class GroqClient(
             }
         }
 
-    override suspend fun solve(apiKey: String, rawText: String): Result<ExtractionResult> =
+    override suspend fun solve(apiKey: String, rawText: String, bitmap: Bitmap?): Result<ExtractionResult> =
         withContext(Dispatchers.IO) {
             try {
                 val prompt = SOLVE_PROMPT.replace("${'$'}transcription", rawText)
@@ -87,7 +87,16 @@ class GroqClient(
                     put("model", model)
                     put("messages", JSONArray().put(JSONObject().apply {
                         put("role", "user")
-                        put("content", prompt)
+                        put("content", if (bitmap != null) {
+                            val base64Image = bitmapToBase64Jpeg(bitmap)
+                            val dataUrl = "data:image/jpeg;base64,$base64Image"
+                            JSONArray().apply {
+                                put(JSONObject().put("type", "text").put("text", prompt))
+                                put(JSONObject().put("type", "image_url").put("image_url", JSONObject().put("url", dataUrl)))
+                            }
+                        } else {
+                            prompt
+                        })
                     }))
                     put("response_format", JSONObject().put("type", "json_object"))
                 }

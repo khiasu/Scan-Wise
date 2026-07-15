@@ -70,7 +70,7 @@ class ClaudeClient(
             }
         }
 
-    override suspend fun solve(apiKey: String, rawText: String): Result<ExtractionResult> =
+    override suspend fun solve(apiKey: String, rawText: String, bitmap: Bitmap?): Result<ExtractionResult> =
         withContext(Dispatchers.IO) {
             try {
                 val prompt = SOLVE_PROMPT.replace("${'$'}transcription", rawText)
@@ -79,10 +79,23 @@ class ClaudeClient(
                     put("max_tokens", 4096)
                     put("messages", JSONArray().put(JSONObject().apply {
                         put("role", "user")
-                        put("content", JSONArray().put(JSONObject().apply {
-                            put("type", "text")
-                            put("text", prompt)
-                        }))
+                        put("content", JSONArray().apply {
+                            put(JSONObject().apply {
+                                put("type", "text")
+                                put("text", prompt)
+                            })
+                            if (bitmap != null) {
+                                val base64Image = bitmapToBase64Jpeg(bitmap)
+                                put(JSONObject().apply {
+                                    put("type", "image")
+                                    put("source", JSONObject().apply {
+                                        put("type", "base64")
+                                        put("media_type", "image/jpeg")
+                                        put("data", base64Image)
+                                    })
+                                })
+                            }
+                        })
                     }))
                 }
                 val request = Request.Builder()

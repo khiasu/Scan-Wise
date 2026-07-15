@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,12 +56,15 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
     val repo = remember { ScanRepository(context) }
     val scope = rememberCoroutineScope()
 
-    val capturedUris = remember { mutableStateListOf<Uri>() }
-    var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
+    // Use rememberSaveable so the URI list survives Activity recreation (e.g. when camera kills our Activity)
+    var capturedUriStrings by rememberSaveable { mutableStateOf(listOf<String>()) }
+    val capturedUris = capturedUriStrings.mapNotNull { runCatching { Uri.parse(it) }.getOrNull() }
+
+    var pendingCameraUriString by rememberSaveable { mutableStateOf<String?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success && pendingCameraUri != null) {
-            capturedUris.add(pendingCameraUri!!)
+        if (success && pendingCameraUriString != null) {
+            capturedUriStrings = capturedUriStrings + pendingCameraUriString!!
         }
     }
 
@@ -69,7 +73,7 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
     ) { granted ->
         if (granted) {
             val uri = createCaptureUri(context)
-            pendingCameraUri = uri
+            pendingCameraUriString = uri.toString()
             cameraLauncher.launch(uri)
         }
     }
@@ -77,7 +81,7 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia()
     ) { uris -> 
-        capturedUris.addAll(uris) 
+        capturedUriStrings = capturedUriStrings + uris.map { it.toString() }
     }
 
     val pdfLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -236,7 +240,7 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
                                 ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                                 if (granted) {
                                     val uri = createCaptureUri(context)
-                                    pendingCameraUri = uri
+                                    pendingCameraUriString = uri.toString()
                                     cameraLauncher.launch(uri)
                                 } else {
                                     cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
@@ -344,7 +348,7 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
                                     .size(28.dp)
                                     .clip(CircleShape)
                                     .background(Color.Black.copy(alpha = 0.6f))
-                                    .clickable { capturedUris.remove(uri) },
+                                    .clickable { capturedUriStrings = capturedUriStrings.filter { s -> Uri.parse(s) != uri } },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -390,10 +394,10 @@ fun ScanScreen(onDocumentCreated: (Long) -> Unit) {
                         scope.launch {
                             val docId = repo.createDocumentFromImages(
                                 title = "Scan ${System.currentTimeMillis() / 1000}",
-                                imageUris = capturedUris.toList(),
+                                imageUris = capturedUris,
                                 sourceType = "CAMERA"
                             )
-                            capturedUris.clear()
+                            capturedUriStrings = emptyList()
                             onDocumentCreated(docId)
                         }
                     },

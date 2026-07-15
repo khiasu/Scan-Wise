@@ -9,7 +9,10 @@ data class ParsedQuestionData(
     val explanation: String,
     val paraphrasedQuestion: String = "",
     val answerText: String = "",
-    val hint: String = ""
+    val hint: String = "",
+    val figureDescription: String = "",
+    val figureBox: String = "",
+    val figureImagePath: String = ""
 )
 
 fun parseQuestionValue(value: String): ParsedQuestionData {
@@ -25,6 +28,9 @@ fun parseQuestionValue(value: String): ParsedQuestionData {
     val paraphrasedBuilder = StringBuilder()
     val answerTextBuilder = StringBuilder()
     val hintBuilder = StringBuilder()
+    val figureBuilder = StringBuilder()
+    val figureBoxBuilder = StringBuilder()
+    val figureImagePathBuilder = StringBuilder()
 
     for (line in lines) {
         val trimmed = line.trim()
@@ -53,6 +59,15 @@ fun parseQuestionValue(value: String): ParsedQuestionData {
         } else if (lower.startsWith("hint:") || lower.startsWith("hints:")) {
             currentSection = "HINT"
             hintBuilder.append(trimmed.substringAfter(":").trim())
+        } else if (lower.startsWith("figure:") || lower.startsWith("figure description:")) {
+            currentSection = "FIGURE"
+            figureBuilder.append(trimmed.substringAfter(":").trim())
+        } else if (lower.startsWith("figure box:")) {
+            currentSection = "FIGURE_BOX"
+            figureBoxBuilder.append(trimmed.substring("figure box:".length).trim())
+        } else if (lower.startsWith("figure image path:")) {
+            currentSection = "FIGURE_IMAGE_PATH"
+            figureImagePathBuilder.append(trimmed.substring("figure image path:".length).trim())
         } else {
             when (currentSection) {
                 "QUESTION" -> {
@@ -92,6 +107,18 @@ fun parseQuestionValue(value: String): ParsedQuestionData {
                     if (hintBuilder.isNotEmpty()) hintBuilder.append("\n")
                     hintBuilder.append(line)
                 }
+                "FIGURE" -> {
+                    if (figureBuilder.isNotEmpty()) figureBuilder.append("\n")
+                    figureBuilder.append(line)
+                }
+                "FIGURE_BOX" -> {
+                    if (figureBoxBuilder.isNotEmpty()) figureBoxBuilder.append("\n")
+                    figureBoxBuilder.append(line)
+                }
+                "FIGURE_IMAGE_PATH" -> {
+                    if (figureImagePathBuilder.isNotEmpty()) figureImagePathBuilder.append("\n")
+                    figureImagePathBuilder.append(line)
+                }
                 else -> {
                     if (questionBuilder.isNotEmpty()) questionBuilder.append("\n")
                     questionBuilder.append(line)
@@ -106,6 +133,9 @@ fun parseQuestionValue(value: String): ParsedQuestionData {
     val finalParaphrased = paraphrasedBuilder.toString().trim()
     val finalAnswerText = answerTextBuilder.toString().trim()
     val finalHint = hintBuilder.toString().trim()
+    val finalFigure = figureBuilder.toString().trim()
+    val finalFigureBox = figureBoxBuilder.toString().trim()
+    val finalFigureImagePath = figureImagePathBuilder.toString().trim()
 
     var finalType = type
     if (finalType.equals("MCQ", ignoreCase = true) && options.isEmpty()) {
@@ -121,7 +151,10 @@ fun parseQuestionValue(value: String): ParsedQuestionData {
         explanation = finalExplanation,
         paraphrasedQuestion = finalParaphrased,
         answerText = finalAnswerText,
-        hint = finalHint
+        hint = finalHint,
+        figureDescription = finalFigure,
+        figureBox = finalFigureBox,
+        figureImagePath = finalFigureImagePath
     )
 }
 
@@ -141,6 +174,9 @@ fun serializeQuestionValue(data: ParsedQuestionData): String {
     sb.append("Answer Key: ${data.answerKey}\n")
     sb.append("Answer Text: ${data.answerText}\n")
     sb.append("Explanation: ${data.explanation}\n")
-    sb.append("Hint: ${data.hint}")
+    sb.append("Hint: ${data.hint}\n")
+    sb.append("Figure: ${data.figureDescription}\n")
+    sb.append("Figure Box: ${data.figureBox}\n")
+    sb.append("Figure Image Path: ${data.figureImagePath}")
     return sb.toString()
 }
